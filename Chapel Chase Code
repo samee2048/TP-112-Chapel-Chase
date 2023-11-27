@@ -1,0 +1,197 @@
+from cmu_graphics import *
+from PIL import Image, ImageDraw
+import random
+
+#Obstacle Class to store the dimensions and coordinates of obstacles
+class Obstacle:
+    def __init__(self,x,y):
+        widthChoices = [380,192]
+        heightChoices = [15,30]
+        self.x = x
+        self.y = y
+        self.width = random.choice(widthChoices)
+        if self.width==380:
+            self.height = 30
+        else:
+            self.height = 15
+    # function needed to make obstacles move
+    def move(self,speed):
+        self.y-=speed
+
+def onAppStart(app):
+    newGame(app)
+
+def newGame(app):
+    app.image = Image.open('chapel.png')
+    newWidth, newHeight = (app.image.width//2, app.image.height//2)
+    app.imageScaled = app.image.resize((newWidth,newHeight))
+    app.imageScaled = CMUImage(app.imageScaled)
+
+    app.image2 = Image.open('idol.png')
+    newWidth, newHeight = (app.image.width//12, app.image.height//11)
+    app.imageScaled2 = app.image2.resize((newWidth,newHeight))
+    app.imageScaled2 = CMUImage(app.imageScaled2)
+
+    app.image3 = Image.open('wall.jpeg')
+    newWidth, newHeight = (app.image.width//2, app.image.height//2)
+    app.imageScaled3 = app.image3.resize((newWidth,newHeight))
+    app.imageScaled3 = CMUImage(app.imageScaled3)
+
+    app.image4 = Image.open('demonface.png')
+    newWidth, newHeight = (app.image.width//6, app.image.height//6)
+    app.imageScaled4 = app.image4.resize((newWidth,newHeight))
+    app.imageScaled4 = CMUImage(app.imageScaled4)
+
+    #gif code for ocean background
+    myGif = Image.open('ocean.gif')
+    app.spriteList = []
+    for frame in range(myGif.n_frames):
+        myGif.seek(frame)
+        fr = myGif.resize((myGif.size[0], myGif.size[1]))
+        fr = fr.transpose(Image.FLIP_LEFT_RIGHT)
+        fr = CMUImage(fr)
+        app.spriteList.append(fr)
+    print(app.spriteList)
+
+    app.spriteCounter = 0
+    app.gameOver = False
+    app.scrollObstacle = 0
+    app.jumping = False
+    app.playerHeight = 50
+    app.playerWidth = 30
+    app.index = 0
+    app.obstacles = []
+    app.stepsPerSecond = 10
+    app.player_x = app.width//2 - app.playerWidth//2
+    app.player_y = app.height//1.5 - app.playerHeight//2
+    app.distance_cm = 0
+    app.distance_m = 0
+    app.score = 0
+    app.coins = 0
+#---------------------------------------------------
+#first screen: welcome screen
+def welcome_redrawAll(app):
+    drawImage(app.imageScaled,0,0)
+    drawLabel("CHAPEL CHASE", app.width//2, app.height//6.5, size = 35, 
+              fill = 'gold', bold = True, font = 'Impact')
+    drawLabel("Take the idol if you dare!", app.width//2, app.height//3.2, size = 19, 
+              fill = 'orange', bold = True, font = 'Courier New')
+    drawImage(app.imageScaled2,app.width//2.4,app.height//2.2)
+    drawLabel("Press \'space\' to PLAY", app.width//2,app.height//1.3, 
+              size = 18, fill = 'white', bold = True, font = 'Courier New')
+
+def welcome_onKeyPress(app, key):
+    if key == 'space':
+        setActiveScreen('game')
+#---------------------------------------------------
+#second screen: actual game screen
+def game_onStep(app):
+    app.spriteCounter = (app.spriteCounter + 1) % len(app.spriteList)
+    if app.gameOver:
+        return
+    app.scrollObstacle-=0.1
+    #indexes through list in redrawAll used for jumping
+    app.index = (app.index+1)%3
+    #stops player from oscillating once it starts jumping
+    if app.index == 2 and app.jumping == True:
+        app.jumping = False
+    #randomly generates obstacles
+    if random.randint(0,100) < 4:
+        obstacle_x = 0
+        obstacle_y = 0
+        app.obstacles.append(Obstacle(obstacle_x,obstacle_y))
+    #removes obstacles that are off screen from the list
+    app.obstacles = [obstacle for obstacle in app.obstacles 
+                     if obstacle.y < app.height]
+    if app.jumping == False:
+        listy = [0,0,0]
+    else:
+        listy = [0,50,0]
+    #2 collision checks: either game over or player goes slower
+    for obstacle in app.obstacles:
+        if (obstacle.width==380) and ((obstacle.y + obstacle.height) == 
+                    (app.player_y - listy[app.index])):
+            app.gameOver = True
+        elif (obstacle.width==192) and ((obstacle.y + obstacle.height) == 
+                    (app.player_y - listy[app.index])):
+            app.stepsPerSecond-=2
+    #calculates distance and score of player
+    app.distance_cm+=4
+    app.distance_m = app.distance_cm//100
+    app.score += (app.distance_m) + 5*app.coins
+    
+def game_onKeyPress(app,key):
+    if key=='p':
+        setActiveScreen('pause')
+    if key == 'r':
+        setActiveScreen('welcome')
+    elif key == 'space':
+        if app.jumping==False:
+            app.jumping = True
+
+def game_redrawAll(app):
+    if app.gameOver == False:
+        #draws gif
+        x, y = app.width/2, app.height/2
+        drawImage(app.spriteList[app.spriteCounter], 
+                  x, y, align = 'center')
+        #draws obstacles
+        for obstacle in app.obstacles:
+            obstacle.move(app.scrollObstacle)
+            drawRect(obstacle.x,obstacle.y,
+                    obstacle.width,obstacle.height,fill='pink')
+        #draws player based on if it is jumping or not
+        if app.jumping == False:
+            listy = [0,0,0]
+        else:
+            listy = [0,50,0]
+
+        drawRect(app.player_x, app.player_y - listy[app.index], 
+                app.playerWidth,app.playerHeight,fill = 'cyan')
+        drawLabel(f'Distance: {app.distance_m}m', app.width//1.2,app.height//5.5,
+                  fill = 'black', bold = True)
+    else:
+        setActiveScreen('end')
+#---------------------------------------------------
+#third screen: paused screen
+def pause_onKeyPress(app, key):
+    if key=='p':
+        setActiveScreen('game')
+    if key == 'r':
+        setActiveScreen('welcome')
+    if key == 'e':
+        setActiveScreen('end')
+
+def pause_redrawAll(app):
+    drawImage(app.imageScaled3,0,0)
+    drawLabel('PAUSED!', app.width//2, app.height//6, size = 36, bold = True, 
+              fill = 'white', font = 'Courier New')
+    drawLabel('Press \'e\' to end.', app.width//2, app.height//3, size = 20,
+               bold = True, fill = 'gold', font = 'Courier New')
+    drawLabel('Press \'p\' to continue.', app.width//2, app.height//2, size = 20,
+               bold = True, fill = 'gold', font = 'Courier New')
+    drawLabel('Press \'r\' to restart.', app.width//2, app.height//1.5, size = 20,
+               bold = True, fill = 'gold', font = 'Courier New')
+               
+    drawLabel(f'Current Score: {app.score}',app.width//2,app.height//1.2,
+              size = 20, bold = True, fill = 'red', font = 'Courier New')
+
+#---------------------------------------------------
+#fourth screen: game over screen
+def end_onKeyPress(app,key):
+    if key=='r':
+        setActiveScreen('welcome')
+
+def end_redrawAll(app):
+    drawRect(0,0,app.width,app.height,fill='gray')
+    drawImage(app.imageScaled4,app.width//3.32,app.height//30)
+    drawLabel(f'SCORE:      {app.score}',app.width//2.1,app.height//1.9, 
+              size = 25,bold = True, fill = 'gold',font = 'Impact')
+    drawLabel(f'Distance: {app.distance_m}m',app.width//2.1,app.height//1.5,
+              size = 20, bold = True, fill = 'orange', font = 'Courier')
+    drawLabel(f'Coins: {app.coins}',app.width//2.1,app.height//1.3,
+              size = 20, bold = True, fill = 'white', font = 'Courier')
+    drawLabel('Press \'r\' to restart!',app.width//2.1,app.height//1.1,
+              size = 16, fill = 'red', font = 'Courier')
+
+runAppWithScreens(width = 380, height = 250, initialScreen='welcome')
