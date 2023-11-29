@@ -6,17 +6,17 @@ import random
 class Obstacle:
     def __init__(self,x,y):
         widthChoices = [380,192]
-        heightChoices = [15,30]
+        heightChoices = [15,25]
         self.x = x
         self.y = y
         self.width = random.choice(widthChoices)
         if self.width==380:
-            self.height = 30
+            self.height = 25
         else:
             self.height = 15
     # function needed to make obstacles move
     def move(self,speed):
-        self.y-=speed
+        self.y+=speed
 
 def onAppStart(app):
     newGame(app)
@@ -42,6 +42,11 @@ def newGame(app):
     app.imageScaled4 = app.image4.resize((newWidth,newHeight))
     app.imageScaled4 = CMUImage(app.imageScaled4)
 
+    app.image5 = Image.open('pathway.png')
+    newWidth, newHeight = (app.image.width//2, app.image.height//2)
+    app.imageScaled5 = app.image5.resize((newWidth,newHeight))
+    app.imageScaled5 = CMUImage(app.imageScaled5)
+
     #gif code for ocean background
     myGif = Image.open('ocean.gif')
     app.spriteList = []
@@ -55,7 +60,7 @@ def newGame(app):
 
     app.spriteCounter = 0
     app.gameOver = False
-    app.scrollObstacle = 0
+    app.scrollObstacle = 7
     app.jumping = False
     app.playerHeight = 50
     app.playerWidth = 30
@@ -68,6 +73,8 @@ def newGame(app):
     app.distance_m = 0
     app.score = 0
     app.coins = 0
+    app.slowedDown = False
+    app.slowCount = 0
 #---------------------------------------------------
 #first screen: welcome screen
 def welcome_redrawAll(app):
@@ -89,7 +96,6 @@ def game_onStep(app):
     app.spriteCounter = (app.spriteCounter + 1) % len(app.spriteList)
     if app.gameOver:
         return
-    app.scrollObstacle-=0.1
     #indexes through list in redrawAll used for jumping
     app.index = (app.index+1)%3
     #stops player from oscillating once it starts jumping
@@ -99,7 +105,13 @@ def game_onStep(app):
     if random.randint(0,100) < 4:
         obstacle_x = 0
         obstacle_y = 0
-        app.obstacles.append(Obstacle(obstacle_x,obstacle_y))
+        if len(app.obstacles)>0:
+            newOb = Obstacle(obstacle_x,obstacle_y)
+            prevOb = app.obstacles[-1]
+            if (prevOb.y - (newOb.y+newOb.height))>=55:
+                app.obstacles.append(Obstacle(obstacle_x,obstacle_y))
+        else:
+            app.obstacles.append(Obstacle(obstacle_x,obstacle_y))
     #removes obstacles that are off screen from the list
     app.obstacles = [obstacle for obstacle in app.obstacles 
                      if obstacle.y < app.height]
@@ -109,13 +121,31 @@ def game_onStep(app):
         listy = [0,50,0]
     #2 collision checks: either game over or player goes slower
     for obstacle in app.obstacles:
-        if (obstacle.width==380) and ((obstacle.y + obstacle.height) == 
-                    (app.player_y - listy[app.index])):
-            app.gameOver = True
-        elif (obstacle.width==192) and ((obstacle.y + obstacle.height) == 
-                    (app.player_y - listy[app.index])):
-            app.stepsPerSecond-=2
-    #calculates distance and score of player
+        if (obstacle.width==380):
+            if (app.jumping==False) and ((obstacle.y + obstacle.height)
+                >=app.player_y - listy[app.index] >= (obstacle.y + obstacle.height-5)):
+                app.gameOver = True
+        
+        elif (obstacle.width == 192):
+            if (app.jumping == False) and ((obstacle.y + obstacle.height)
+                >=app.player_y - listy[app.index] >= (obstacle.y+obstacle.height-3)):
+                if app.player_x<=(obstacle.x+obstacle.width):
+                    if not app.slowedDown:
+                        app.slowedDown = True
+                    else:
+                        app.gameOver = True
+    
+    if app.slowedDown:
+        if app.slowCount < 20:
+            app.slowCount += 1
+            app.scrollObstacle = 4
+        elif app.slowCount == 20:
+            app.slowedDown = False
+            app.slowCount = 0
+            app.scrollObstacle = 7
+        
+        
+ 
     app.distance_cm+=4
     app.distance_m = app.distance_cm//100
     app.score += (app.distance_m) + 5*app.coins
@@ -125,9 +155,20 @@ def game_onKeyPress(app,key):
         setActiveScreen('pause')
     if key == 'r':
         setActiveScreen('welcome')
-    elif key == 'space':
+    if key == 'space':
         if app.jumping==False:
             app.jumping = True
+
+def game_onKeyHold(app,keys):
+    if 'right' in keys:
+        if app.player_x+app.playerWidth < (app.width-100):
+            app.player_x = (app.width//2 - app.playerWidth//2) + 30
+    if 'left' in keys:
+        if app.player_x > 100:
+            app.player_x = (app.width//2 - app.playerWidth//2) - 30
+
+def game_onKeyRelease(app,key):
+    app.player_x = app.width//2 - app.playerWidth//2
 
 def game_redrawAll(app):
     if app.gameOver == False:
@@ -135,6 +176,7 @@ def game_redrawAll(app):
         x, y = app.width/2, app.height/2
         drawImage(app.spriteList[app.spriteCounter], 
                   x, y, align = 'center')
+        drawImage(app.imageScaled5,0,0)
         #draws obstacles
         for obstacle in app.obstacles:
             obstacle.move(app.scrollObstacle)
