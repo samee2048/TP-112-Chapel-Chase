@@ -84,13 +84,13 @@ def newGame(app):
     app.rx2 = app.width
     app.ry2 = 0
     app.rx3 = app.width
-    app.ry3 = 70+app.ry2
+    app.ry3 = 70
     app.rx4 = 270
-    app.ry4 = 70+app.ry2
+    app.ry4 = 70
     app.rx5 = 320
-    app.ry5 = app.ry1+app.height
+    app.ry5 = app.height
     app.rx6 = 60
-    app.ry6 = app.ry1+app.height
+    app.ry6 = app.height
 
     app.lx1 = 0
     app.ly1 = 0
@@ -184,38 +184,60 @@ def game_onStep(app):
     if app.turnCount==100:
         app.showObstacles = False
         app.isTurn = True
+        # generate = True
 
     if app.isTurn == True:
-        turnNum = random.randint(0,4)
-        print(turnNum)
-        if turnNum%2==0:
-            app.turnPoints = copy.copy(app.turnDict['right'])
-            print(app.turnPoints)
-            direction = 'right'
-        else:
-            app.turnPoints = copy.copy(app.turnDict['left'])
-            print(app.turnPoints)
-            direction = 'left'
-        if direction=='right':
-            while app.turnPoints[7]<app.height:
-                app.turnPoints[1]+=app.scrollTurn
-                app.turnPoints[3]+=app.scrollTurn
-                app.turnPoints[0]-=2
-                app.turnPoints[6]+=2
-                app.turnPoints[8]+=2
-                app.turnPoints[10]-=2
-            app.turnCount = 0
-            app.isTurn = False
-        elif direction == 'left':
-            while app.turnPoints[9] < app.height:
-                app.turnPoints[1]+=app.scrollTurn
-                app.turnPoints[3]+=app.scrollTurn
-                app.turnPoints[2]+=2
-                app.turnPoints[4]+=2
-                app.turnPoints[6]-=2
-                app.turnPoints[8]-=2
-            app.turnCount = 0
-            app.isTurn = False
+        app.turnPoints = copy.copy(app.turnDict['right'])
+        print(app.turnPoints)
+        while app.turnPoints[7]<app.height:
+            app.turnPoints[1]+=app.scrollTurn
+            app.turnPoints[3]+=app.scrollTurn
+            app.turnPoints[5]+=app.scrollTurn
+            app.turnPoints[7]+=app.scrollTurn
+            app.turnPoints[9]+=app.scrollTurn
+            app.turnPoints[11]+=app.scrollTurn
+            app.turnPoints[0]-=2
+            app.turnPoints[6]+=2
+            app.turnPoints[8]+=2
+            app.turnPoints[10]-=2
+        print(app.turnPoints)
+        app.turnCount = 0
+        app.isTurn = False
+
+    # if app.isTurn == True:
+    #     if generate == True:
+    #         turnNum = random.randint(0,4)
+    #         print(turnNum)
+    #         if turnNum%2==0:
+    #             app.turnPoints = copy.copy(app.turnDict['right'])
+    #             print(app.turnPoints)
+    #             direction = 'right'
+    #         else:
+    #             app.turnPoints = copy.copy(app.turnDict['left'])
+    #             print(app.turnPoints)
+    #             direction = 'left'
+    #     generate = False
+    # app.isTurn = False
+        # if direction=='right':
+        #     while app.turnPoints[7]<app.height:
+        #         app.turnPoints[1]+=app.scrollTurn
+        #         app.turnPoints[3]+=app.scrollTurn
+        #         app.turnPoints[0]-=2
+        #         app.turnPoints[6]+=2
+        #         app.turnPoints[8]+=2
+        #         app.turnPoints[10]-=2
+        #     app.turnCount = 0
+        #     app.isTurn = False
+        # elif direction == 'left':
+        #     while app.turnPoints[9] < app.height:
+        #         app.turnPoints[1]+=app.scrollTurn
+        #         app.turnPoints[3]+=app.scrollTurn
+        #         app.turnPoints[2]+=2
+        #         app.turnPoints[4]+=2
+        #         app.turnPoints[6]-=2
+        #         app.turnPoints[8]-=2
+        #     app.turnCount = 0
+        #     app.isTurn = False
             
 
     app.distance_cm+=4
