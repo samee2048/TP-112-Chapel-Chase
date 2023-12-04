@@ -2,6 +2,7 @@ from cmu_graphics import *
 from PIL import Image, ImageDraw
 import random
 import copy
+import math
 
 #Obstacle Class to store the dimensions and coordinates of obstacles
 class Obstacle:
@@ -65,6 +66,7 @@ def newGame(app):
     app.index = 0
     app.obstacles = []
     app.stepsPerSecond = 10
+    app.speedCounter = 0
     app.player_x = app.width//2 - app.playerWidth//2
     app.player_y = app.height//1.5 - app.playerHeight//2
     app.distance_cm = 0
@@ -74,10 +76,19 @@ def newGame(app):
     app.slowedDown = False
     app.slowCount = 0
     app.showObstacles = True
+    app.obstacleCounter = 0
     app.turnCount = 0
     app.turnPoints = []
     app.scrollTurn = 7
     app.isTurn = False
+    app.startTurn = False
+    app.direction = None
+    app.playerTurn = False
+    app.swivel = False
+    app.startSwivel = False
+    app.swivelPoints = []
+    app.swivelCount = 0
+    app.degrees = 0
 
     app.rx1 = app.width/3
     app.ry1 = 0
@@ -109,6 +120,15 @@ def newGame(app):
                              app.ry4,app.rx5,app.ry5,app.rx6,app.ry6]
     app.turnDict['left'] = [app.lx1,app.ly1,app.lx2,app.ly2,app.lx3,app.ly3,app.lx4,
                              app.ly4,app.lx5,app.ly5,app.lx6,app.ly6]
+    
+    app.rightRectPoints = [57.4,126,520,126,520,320,57.4,320]
+    app.leftRectPoints = [-520,126,323,126,323,300,-520,300]
+    
+    #[57.4,50,380,50,380,250,57.4,250]
+    #[57.4,50,450,50,450,250,57.4,250]
+    #[57.4,50,450,50,450,300,57.4,300]
+    #[57.4,50,500,50,500,300,57.4,300]
+
 #---------------------------------------------------
 #first screen: welcome screen
 def welcome_redrawAll(app):
@@ -137,7 +157,7 @@ def game_onStep(app):
         app.jumping = False
     #randomly generates obstacles
     if app.showObstacles == True:
-        if random.randint(0,100) < 4:
+        if random.randint(0,100) < 12:
             obstacle_x = 0
             obstacle_y = 0
             if len(app.obstacles)>0:
@@ -151,10 +171,11 @@ def game_onStep(app):
         app.obstacles = [obstacle for obstacle in app.obstacles 
                         if obstacle.y < app.height]
         if app.jumping == False:
-            listy = [0,0,0]
+            listy = [0,0,0,0,0,0,0,0,0,0,0]
         else:
-            listy = [0,50,0]
+            listy = [0,30,60,80,90,100,90,80,60,30,0]
         #2 collision checks: either game over or player goes slower
+        # if player hits small obstacle when slowed down, then game over too
         for obstacle in app.obstacles:
             if (obstacle.width==380):
                 if (app.jumping==False) and ((obstacle.y + obstacle.height)
@@ -178,72 +199,143 @@ def game_onStep(app):
                 app.slowedDown = False
                 app.slowCount = 0
                 app.scrollObstacle = 7
-        
-    if app.turnCount<100:
-        app.turnCount+=1
-    if app.turnCount==100:
+
+    if app.obstacleCounter < 45:
+        app.obstacleCounter+=1
+    if app.obstacleCounter==45:
         app.showObstacles = False
+        app.obstacleCounter = 0
+
+    if app.turnCount<60:
+        app.turnCount+=1
+    if app.turnCount==60:
         app.isTurn = True
-        # generate = True
+        app.startTurn = True
 
     if app.isTurn == True:
-        app.turnPoints = copy.copy(app.turnDict['right'])
-        print(app.turnPoints)
-        while app.turnPoints[7]<app.height:
-            app.turnPoints[1]+=app.scrollTurn
-            app.turnPoints[3]+=app.scrollTurn
-            app.turnPoints[5]+=app.scrollTurn
-            app.turnPoints[7]+=app.scrollTurn
-            app.turnPoints[9]+=app.scrollTurn
-            app.turnPoints[11]+=app.scrollTurn
-            app.turnPoints[0]-=2
-            app.turnPoints[6]+=2
-            app.turnPoints[8]+=2
-            app.turnPoints[10]-=2
-        print(app.turnPoints)
-        app.turnCount = 0
-        app.isTurn = False
+        if app.startTurn == True:
+            turnNum = random.randint(0,4)
+            if turnNum%2==0:
+                app.turnPoints = copy.copy(app.turnDict['right'])
+                app.direction = 'right'
+            else:
+                app.turnPoints = copy.copy(app.turnDict['left'])
+                app.direction = 'left'
+            app.startTurn = False
+        if app.direction == 'right':
+            if app.turnPoints[7]<app.height:
+                app.turnPoints[1]+=app.scrollTurn
+                app.turnPoints[3]+=app.scrollTurn
+                app.turnPoints[5]+=app.scrollTurn+3
+                app.turnPoints[7]+=app.scrollTurn+3
+                app.turnPoints[9]+=app.scrollTurn
+                app.turnPoints[11]+=app.scrollTurn
+                app.turnPoints[0]-=2
+                app.turnPoints[6]+=2
+                app.turnPoints[8]+=2
+                app.turnPoints[10]-=2
+            else:
+                if app.playerTurn == True:
+                    app.swivel = True
+                    app.startSwivel = True
+                elif app.playerTurn == False:
+                    app.gameOver = True
+                app.playerTurn = False
+                app.isTurn = False
+                app.showObstacles = True
+            app.turnCount = 0
+        elif app.direction == 'left':
+            if app.turnPoints[9] < app.height:
+                app.turnPoints[1]+=app.scrollTurn
+                app.turnPoints[3]+=app.scrollTurn
+                app.turnPoints[5]+=app.scrollTurn
+                app.turnPoints[7]+=app.scrollTurn
+                app.turnPoints[9]+=app.scrollTurn+3
+                app.turnPoints[11]+=app.scrollTurn+3
+                app.turnPoints[2]+=2
+                app.turnPoints[4]+=2
+                app.turnPoints[6]-=2
+                app.turnPoints[8]-=2
+            else:
+                if app.playerTurn == True:
+                    app.swivel = True
+                    app.startSwivel = True
+                elif app.playerTurn == False:
+                    app.gameOver = True
+                app.playerTurn = False
+                app.isTurn = False
+                app.showObstacles = True
+            app.turnCount = 0
+    
+    if app.swivel == True:
+        if app.startSwivel == True:
+            if app.direction == 'right':
+                app.swivelPoints = copy.copy(app.rightRectPoints)
+                app.degrees = 369
+            elif app.direction == 'left':
+                app.swivelPoints = copy.copy(app.leftRectPoints)
+                app.degrees = -9
+            app.startSwivel = False
+        if app.direction == 'right':
+            app.degrees-=9
+            if app.swivelCount < 5:
+                app.swivelCount+=1
+                app.swivelPoints[1]-=13
+                app.swivelPoints[7]+=12
+                app.swivelPoints[3]+=5
+                app.swivelPoints[5]-=7
+                rotate(app.swivelPoints,app.degrees,230,250)
+            else:
+                app.swivelCount = 0
+                app.degrees = 0
+                app.swivel = False
+                app.showObstacles = True
 
-    # if app.isTurn == True:
-    #     if generate == True:
-    #         turnNum = random.randint(0,4)
-    #         print(turnNum)
-    #         if turnNum%2==0:
-    #             app.turnPoints = copy.copy(app.turnDict['right'])
-    #             print(app.turnPoints)
-    #             direction = 'right'
-    #         else:
-    #             app.turnPoints = copy.copy(app.turnDict['left'])
-    #             print(app.turnPoints)
-    #             direction = 'left'
-    #     generate = False
-    # app.isTurn = False
-        # if direction=='right':
-        #     while app.turnPoints[7]<app.height:
-        #         app.turnPoints[1]+=app.scrollTurn
-        #         app.turnPoints[3]+=app.scrollTurn
-        #         app.turnPoints[0]-=2
-        #         app.turnPoints[6]+=2
-        #         app.turnPoints[8]+=2
-        #         app.turnPoints[10]-=2
-        #     app.turnCount = 0
-        #     app.isTurn = False
-        # elif direction == 'left':
-        #     while app.turnPoints[9] < app.height:
-        #         app.turnPoints[1]+=app.scrollTurn
-        #         app.turnPoints[3]+=app.scrollTurn
-        #         app.turnPoints[2]+=2
-        #         app.turnPoints[4]+=2
-        #         app.turnPoints[6]-=2
-        #         app.turnPoints[8]-=2
-        #     app.turnCount = 0
-        #     app.isTurn = False
-            
+        elif app.direction == 'left':
+            app.degrees+=9
+            if app.swivelCount < 5:
+                app.swivelCount+=1
+                app.swivelPoints[5]-=(-6)
+                app.swivelPoints[3]+=(-6)
+                app.swivelPoints[1]-=(-3)
+                app.swivelPoints[7]+=(-3)
+                rotate(app.swivelPoints,app.degrees,150,250)
+            else:
+                app.swivelPoint = 0
+                app.degrees = 0
+                app.swivel = False
+                app.showObstacles = True
 
+    if app.distance_m>10:
+        app.stepsPerSecond = 15
+    
+    if app.distance_m>20:
+        app.stepsPerSecond = 20
+    
     app.distance_cm+=4
     app.distance_m = app.distance_cm//100
     app.score += (app.distance_m) + 5*app.coins
     
+def rotate(pointList,deg,h,k):
+    rotDeg = deg
+    topLx = pointList[0]
+    topLy = pointList[1]
+    topRx = pointList[2]
+    topRy = pointList[3]
+    botRx = pointList[4]
+    botRy = pointList[5]
+    botLx = pointList[6]
+    botLy = pointList[7]
+    pointList[0] = (topLx - h)*math.cos(rotDeg*math.pi/180)-(topLy-k)*math.sin(rotDeg*math.pi/180)+h
+    pointList[1] = (topLx - h)*math.sin(rotDeg*math.pi/180)+(topLy-k)*math.cos(rotDeg*math.pi/180)+k
+    pointList[2] = (topRx - h)*math.cos(rotDeg*math.pi/180)-(topRy-k)*math.sin(rotDeg*math.pi/180)+h
+    pointList[3] = (topRx - h)*math.sin(rotDeg*math.pi/180)+(topRy-k)*math.cos(rotDeg*math.pi/180)+k
+    pointList[4] = (botRx - h)*math.cos(rotDeg*math.pi/180)-(botRy-k)*math.sin(rotDeg*math.pi/180)+h
+    pointList[5] = (botRx - h)*math.sin(rotDeg*math.pi/180)+(botRy-k)*math.cos(rotDeg*math.pi/180)+k
+    pointList[6] = (botLx - h)*math.cos(rotDeg*math.pi/180)-(botLy-k)*math.sin(rotDeg*math.pi/180)+h
+    pointList[7] = (botLx - h)*math.sin(rotDeg*math.pi/180)+(botLy-k)*math.cos(rotDeg*math.pi/180)+k
+    return pointList
+
 def game_onKeyPress(app,key):
     if key=='p':
         setActiveScreen('pause')
@@ -252,12 +344,19 @@ def game_onKeyPress(app,key):
     if key == 'space':
         if app.jumping==False:
             app.jumping = True
+    if key == 'right':
+        if app.direction == 'right':
+            app.playerTurn = True
+    if key == 'left':
+        if app.direction == 'left':
+            app.playerTurn = True
+
 
 def game_onKeyHold(app,keys):
-    if 'right' in keys:
+    if 'd' in keys:
         if app.player_x+app.playerWidth < (app.width-100):
             app.player_x = (app.width//2 - app.playerWidth//2) + 30
-    if 'left' in keys:
+    if 'a' in keys:
         if app.player_x > 100:
             app.player_x = (app.width//2 - app.playerWidth//2) - 30
 
@@ -270,27 +369,28 @@ def game_redrawAll(app):
         x, y = app.width/2, app.height/2
         drawImage(app.spriteList[app.spriteCounter], 
                   x, y, align = 'center')
-        
-        if app.isTurn == False:
+        if app.isTurn == False and app.swivel == False:
             drawPolygon(app.width/3,0,(2*app.width)/3,0,320,app.height,60,app.height,
                 fill = 'gray')
-        else:
-            print('draw')
+            
+        elif app.isTurn == True:
             drawPolygon(*app.turnPoints,fill='gray')
 
+        elif app.swivel == True:
+            drawPolygon(*app.swivelPoints,fill='gray')
+
         #draws obstacles
-        if app.showObstacles == True:
-            for obstacle in app.obstacles:
-                obstacle.move(app.scrollObstacle)
-                drawRect(obstacle.x,obstacle.y,
-                        obstacle.width,obstacle.height,fill='pink')
+        for obstacle in app.obstacles:
+            obstacle.move(app.scrollObstacle)
+            drawRect(obstacle.x,obstacle.y,
+                     obstacle.width,obstacle.height,fill='pink')
         #draws player based on if it is jumping or not
         if app.jumping == False:
-            listy = [0,0,0]
+            heightList = [0,0,0,0,0,0,0,0,0,0,0]
         else:
-            listy = [0,50,0]
+            heightList = [0,30,60,80,90,100,90,80,60,30,0]
 
-        drawRect(app.player_x, app.player_y - listy[app.index], 
+        drawRect(app.player_x, app.player_y - heightList[app.index], 
                 app.playerWidth,app.playerHeight,fill = 'cyan')
         drawLabel(f'Distance: {app.distance_m}m', app.width//1.2,app.height//5.5,
                   fill = 'black', bold = True)
@@ -322,9 +422,6 @@ def pause_redrawAll(app):
 
 #---------------------------------------------------
 #fourth screen: game over screen
-def end_onKeyPress(app,key):
-    if key=='r':
-        setActiveScreen('welcome')
 
 def end_redrawAll(app):
     drawRect(0,0,app.width,app.height,fill='gray')
@@ -335,7 +432,5 @@ def end_redrawAll(app):
               size = 20, bold = True, fill = 'orange', font = 'Courier')
     drawLabel(f'Coins: {app.coins}',app.width//2.1,app.height//1.3,
               size = 20, bold = True, fill = 'white', font = 'Courier')
-    drawLabel('Press \'r\' to restart!',app.width//2.1,app.height//1.1,
-              size = 16, fill = 'red', font = 'Courier')
 
 runAppWithScreens(width = 380, height = 250, initialScreen='welcome')
