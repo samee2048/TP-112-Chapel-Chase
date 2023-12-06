@@ -28,37 +28,44 @@ def onAppStart(app):
     newGame(app)
 
 def newGame(app):
+    #https://www.istockphoto.com/video/entering-the-church-door-gate-gm101293013-9629783
     app.image = Image.open('chapel.png')
     newWidth, newHeight = (app.image.width//2, app.image.height//2)
     app.imageScaled = app.image.resize((newWidth,newHeight))
     app.imageScaled = CMUImage(app.imageScaled)
 
+    #https://templerun.fandom.com/wiki/Golden_Idol
     app.image2 = Image.open('idol.png')
     newWidth, newHeight = (app.image.width//12, app.image.height//11)
     app.imageScaled2 = app.image2.resize((newWidth,newHeight))
     app.imageScaled2 = CMUImage(app.imageScaled2)
 
+    #https://www.vecteezy.com/vector-art/3678912-stone-tiles-texture-in-cartoon-style
     app.image3 = Image.open('wall.jpeg')
     newWidth, newHeight = (app.image.width//2, app.image.height//2)
     app.imageScaled3 = app.image3.resize((newWidth,newHeight))
     app.imageScaled3 = CMUImage(app.imageScaled3)
 
+    #https://templerun.fandom.com/wiki/Evil_Demon_Monkeys?file=Demon_Skull.png
     app.image4 = Image.open('demonface.png')
     newWidth, newHeight = (app.image.width//6, app.image.height//6)
     app.imageScaled4 = app.image4.resize((newWidth,newHeight))
     app.imageScaled4 = CMUImage(app.imageScaled4)
 
+    #https://stock.adobe.com/images/brick-wall-seamless-pattern-background-gray-light-cartoon-brick-wall-vector-texture-pattern-illustration-horizontal-old-seamless-grey-brick-texture-background/344987004
     app.image5 = Image.open('wallObs1.png')
     newWidth, newHeight = (app.image.width, app.image.height//20)
     app.imageScaled5 = app.image5.resize((newWidth,newHeight))
     app.imageScaled5 = CMUImage(app.imageScaled5)
 
+    #https://www.pinterest.com/pin/781093129124588320/
     app.image6 = Image.open('seaweed.png')
     newWidth, newHeight = (app.image.width//4, app.image.height//23)
     app.imageScaled6 = app.image6.resize((newWidth,newHeight))
     app.imageScaled6 = CMUImage(app.imageScaled6)
 
     #gif code for ocean background
+    #https://giphy.com/gifs/bbcamerica-oceans-26DMTbt4OhYJQtvq0
     myGif = Image.open('ocean.gif')
     app.spriteList = []
     for frame in range(myGif.n_frames):
@@ -69,6 +76,7 @@ def newGame(app):
         app.spriteList.append(fr)
 
     #sprite code for running man
+    #https://www.spriters-resource.com/pc_computer/crosscode/sheet/128330/
     spritestrip = openImage('runningSprite.png')
     app.sprites = [ ]
     for i in range(3):
@@ -154,11 +162,13 @@ def newGame(app):
 #---------------------------------------------------
 #first screen: welcome screen
 def welcome_redrawAll(app):
+    #https://www.istockphoto.com/video/entering-the-church-door-gate-gm101293013-9629783
     drawImage(app.imageScaled,0,0)
     drawLabel("CHAPEL CHASE", app.width//2, app.height//6.5, size = 35, 
               fill = 'gold', bold = True, font = 'Impact')
     drawLabel("Take the idol if you dare!", app.width//2, app.height//3.2, size = 19, 
               fill = 'orange', bold = True, font = 'Courier New')
+    #https://templerun.fandom.com/wiki/Golden_Idol
     drawImage(app.imageScaled2,app.width//2.4,app.height//2.2)
     drawLabel("Press \'space\' to PLAY", app.width//2,app.height//1.3, 
               size = 18, fill = 'white', bold = True, font = 'Courier New')
@@ -409,6 +419,7 @@ def game_onKeyRelease(app,key):
 def game_redrawAll(app):
     if app.gameOver == False:
         #draws gif
+        #https://giphy.com/gifs/bbcamerica-oceans-26DMTbt4OhYJQtvq0
         x, y = app.width/2, app.height/2
         drawImage(app.spriteList[app.spriteCounter], 
                   x, y, align = 'center')
@@ -427,17 +438,20 @@ def game_redrawAll(app):
         for obstacle in app.obstacles:
             obstacle.move(app.scrollObstacle)
             if obstacle.width==380:
+                #https://stock.adobe.com/images/brick-wall-seamless-pattern-background-gray-light-cartoon-brick-wall-vector-texture-pattern-illustration-horizontal-old-seamless-grey-brick-texture-background/344987004
                 drawImage(app.imageScaled5,obstacle.x,obstacle.y)
             else:
+                #https://www.pinterest.com/pin/781093129124588320/
                 drawImage(app.imageScaled6,obstacle.x,obstacle.y)
         # draws running character sprite
+        #https://www.spriters-resource.com/pc_computer/crosscode/sheet/128330/
         sprite = app.sprites[app.spriteCounter1]
         if app.jumping == True:
             drawImage(sprite,app.player_x, app.player_y - app.jumpList[app.jumpIndex])
         else:
             drawImage(sprite,app.player_x, app.player_y)
-        drawLabel(f'Distance: {app.distance_m}m', app.width//1.2,app.height//5.5,
-                  fill = 'black', bold = True)
+        drawLabel(f'Distance: {app.distance_m}m', app.width//1.2,app.height//6,size = 13,
+                  fill = 'white', bold = True)
     else:
         setActiveScreen('end')
 #---------------------------------------------------
@@ -451,6 +465,7 @@ def pause_onKeyPress(app, key):
         setActiveScreen('end')
 
 def pause_redrawAll(app):
+    #https://www.vecteezy.com/vector-art/3678912-stone-tiles-texture-in-cartoon-style
     drawImage(app.imageScaled3,0,0)
     drawLabel('PAUSED!', app.width//2, app.height//6, size = 36, bold = True, 
               fill = 'white', font = 'Courier New')
@@ -469,6 +484,7 @@ def pause_redrawAll(app):
 
 def end_redrawAll(app):
     drawRect(0,0,app.width,app.height,fill='gray')
+    #https://templerun.fandom.com/wiki/Evil_Demon_Monkeys?file=Demon_Skull.png
     drawImage(app.imageScaled4,app.width//3.32,app.height//30)
     drawLabel(f'SCORE:      {app.score}',app.width//2.1,app.height//1.9, 
               size = 25,bold = True, fill = 'gold',font = 'Impact')
