@@ -13,8 +13,6 @@ far as possible before dying.
 How to Run Project:
 Go to the 'Chapel Chase Code' file, copy code, and paste it in Virtual Studio Code or another source to run code.
 
-There are no data/source files or libraries required to run/play the game. 
-There are also no shortcut commands existing/applicable for this game. 
-Additionally, no fonts need to be installed.
+NOTE: You need CMU_Graphics installed to successfully run the code. 
 
 Have fun with Chapel Chase! 
